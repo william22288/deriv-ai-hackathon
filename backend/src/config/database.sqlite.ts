@@ -45,11 +45,30 @@ export function query(sql: string, params: any[] = []) {
 }
 
 export function one(sql: string, params: any[] = []) {
-  return db.prepare(sql).get(...params);
+  const result = db.prepare(sql).get(...params);
+  if (!result) {
+    throw new Error('No data returned from query');
+  }
+  return result;
+}
+
+export function oneOrNone(sql: string, params: any[] = []) {
+  return db.prepare(sql).get(...params) || null;
+}
+
+export function manyOrNone(sql: string, params: any[] = []) {
+  return db.prepare(sql).all(...params) || [];
 }
 
 export function none(sql: string, params: any[] = []) {
   return db.prepare(sql).run(...params);
 }
+
+// Attach methods to db object for compatibility
+(db as any).one = one;
+(db as any).oneOrNone = oneOrNone;
+(db as any).manyOrNone = manyOrNone;
+(db as any).none = none;
+(db as any).query = query;
 
 export default db;

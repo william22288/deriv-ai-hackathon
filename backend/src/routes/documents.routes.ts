@@ -7,6 +7,17 @@ const router = Router();
 
 router.use(authenticate);
 
+// Document Generation
+router.post('/generate', documentController.generateDocument);
+router.get('/list', documentController.listDocuments);
+
+// Compliance
+router.get('/compliance', documentController.getComplianceItems);
+router.post('/compliance', documentController.addComplianceItem);
+router.put('/compliance/:id', documentController.updateComplianceItem);
+router.delete('/compliance/:id', documentController.deleteComplianceItem);
+router.get('/compliance/analytics', documentController.getComplianceAnalytics);
+
 // Templates
 router.get('/templates', documentController.getTemplates);
 router.get('/templates/:id', documentController.getTemplate);

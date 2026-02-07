@@ -48,10 +48,11 @@ export async function register(req: Request, res: Response, next: NextFunction):
 
     // Store refresh token
     const tokenHash = await bcrypt.hash(refreshToken, 10);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
     await db.none(`
       INSERT INTO refresh_tokens (id, employee_id, token_hash, expires_at)
-      VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
-    `, [uuidv4(), employee.id, tokenHash]);
+      VALUES (?, ?, ?, ?)
+    `, [uuidv4(), employee.id, tokenHash, expiresAt]);
 
     res.status(201).json({
       success: true,
@@ -104,10 +105,11 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
     // Store refresh token
     const tokenHash = await bcrypt.hash(refreshToken, 10);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
     await db.none(`
       INSERT INTO refresh_tokens (id, employee_id, token_hash, expires_at)
-      VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
-    `, [uuidv4(), employee.id, tokenHash]);
+      VALUES (?, ?, ?, ?)
+    `, [uuidv4(), employee.id, tokenHash, expiresAt]);
 
     res.json({
       success: true,
@@ -144,7 +146,7 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
     // Check if token exists and is not revoked
     const storedTokens = await db.manyOrNone(`
       SELECT * FROM refresh_tokens 
-      WHERE employee_id = $1 AND revoked = false AND expires_at > NOW()
+      WHERE employee_id = ? AND revoked = 0 AND expires_at > datetime('now')
     `, [payload.userId]);
 
     let validToken = false;
@@ -152,7 +154,7 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
       if (await bcrypt.compare(refresh_token, token.token_hash)) {
         validToken = true;
         // Revoke old token
-        await db.none('UPDATE refresh_tokens SET revoked = true WHERE id = $1', [token.id]);
+        await db.none('UPDATE refresh_tokens SET revoked = 1 WHERE id = ?', [token.id]);
         break;
       }
     }
@@ -178,10 +180,11 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
 
     // Store new refresh token
     const tokenHash = await bcrypt.hash(newRefreshToken, 10);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
     await db.none(`
       INSERT INTO refresh_tokens (id, employee_id, token_hash, expires_at)
-      VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
-    `, [uuidv4(), employee.id, tokenHash]);
+      VALUES (?, ?, ?, ?)
+    `, [uuidv4(), employee.id, tokenHash, expiresAt]);
 
     res.json({
       success: true,

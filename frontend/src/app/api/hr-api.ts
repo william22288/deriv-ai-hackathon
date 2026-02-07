@@ -1,13 +1,21 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+// Use your backend API instead of Supabase directly
+const BASE_URL = 'http://localhost:3000/api/v1';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-10623954`;
+// Note: Token will be passed from components that have access to auth context
+// For now, we'll rely on localStorage as a fallback
+function getAuthToken() {
+  // Try to get from localStorage (fallback mechanism)
+  return localStorage.getItem('accessToken') || '';
+}
 
 async function apiCall(endpoint: string, options: RequestInit = {}) {
+  const token = getAuthToken();
+  
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${publicAnonKey}`,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -23,7 +31,7 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
 // ==================== DOCUMENT GENERATION API ====================
 
 export async function fetchDocuments() {
-  return apiCall('/documents');
+  return apiCall('/documents/list');
 }
 
 export async function generateDocument(data: {
@@ -38,7 +46,7 @@ export async function generateDocument(data: {
 }) {
   return apiCall('/documents/generate', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ documentType: data.documentType, data }),
   });
 }
 
@@ -83,31 +91,34 @@ export async function updateRequest(requestId: string, status: string, response?
 // ==================== COMPLIANCE API ====================
 
 export async function fetchComplianceItems() {
-  return apiCall('/compliance');
+  return apiCall('/documents/compliance');
 }
 
 export async function addComplianceItem(data: any) {
-  return apiCall('/compliance', {
+  return apiCall('/documents/compliance', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ item: data }),
   });
 }
 
 export async function updateComplianceItem(itemId: string, updates: any) {
-  return apiCall(`/compliance/${itemId}`, {
+  // This would need a PUT endpoint in your backend
+  return apiCall(`/documents/compliance/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify(updates),
   });
 }
 
 export async function deleteComplianceItem(itemId: string) {
-  return apiCall(`/compliance/${itemId}`, {
+  // This would need a DELETE endpoint in your backend
+  return apiCall(`/documents/compliance/${itemId}`, {
     method: 'DELETE',
   });
 }
 
 export async function fetchComplianceAnalytics() {
-  return apiCall('/compliance/analytics');
+  // This would need an analytics endpoint in your backend
+  return apiCall('/documents/compliance/analytics');
 }
 
 // ==================== EMPLOYEE DATA API ====================

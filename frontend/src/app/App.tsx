@@ -3,6 +3,8 @@ import { Dashboard } from "./components/Dashboard";
 import { DocumentGeneration } from "./components/DocumentGeneration";
 import { HRAssistant } from "./components/HRAssistant";
 import { ComplianceIntelligence } from "./components/ComplianceIntelligence";
+import { LoginForm } from "./components/LoginForm";
+import { useAuth } from "./contexts/AuthContext";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
 import { 
@@ -17,17 +19,23 @@ import { seedComplianceData } from "./api/seed-data";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<"dashboard" | "documents" | "assistant" | "compliance">("dashboard");
+  const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
-    // Initialize sample data on first load
-    seedComplianceData();
-  }, []);
+    // Initialize sample data on first load (only if authenticated)
+    if (isAuthenticated) {
+      seedComplianceData();
+    }
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
-    // Add logout logic here (e.g., clear session, redirect to login)
-    console.log("Logging out...");
-    // You can add actual logout logic here when authentication is implemented
+    logout();
   };
+
+  // If not authenticated, show login form
+  if (!isAuthenticated) {
+    return <LoginForm />;
+  }
 
   const navigation = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

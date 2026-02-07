@@ -23,6 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/better-sqlite3": "^7.6.13",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^12.6.2",
@@ -33,6 +34,7 @@
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "openai": "^4.24.1",
     "pg": "^8.11.3",
     "pg-promise": "^11.5.4",

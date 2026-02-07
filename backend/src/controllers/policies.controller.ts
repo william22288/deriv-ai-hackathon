@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { PolicyModel } from '../database/models/Policy.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 import { NotFoundError } from '../middleware/errorHandler.js';
-import { OpenAIService } from '../services/ai/OpenAIService.js';
+import { GeminiService } from '../services/ai/GeminiService.js';
 import { PolicyCategory } from '../types/policy.types.js';
 import { Jurisdiction } from '../types/employee.types.js';
 
@@ -65,7 +65,7 @@ export async function createPolicy(req: AuthenticatedRequest, res: Response, nex
 
     // Generate embedding for the policy content
     try {
-      const aiService = new OpenAIService();
+      const aiService = new GeminiService();
       const embedding = await aiService.generateEmbedding(policy.content);
       await PolicyModel.updateEmbedding(policy.id, embedding);
     } catch (embeddingError) {
@@ -94,7 +94,7 @@ export async function updatePolicy(req: AuthenticatedRequest, res: Response, nex
     // Regenerate embedding if content changed
     if (req.body.content) {
       try {
-        const aiService = new OpenAIService();
+        const aiService = new GeminiService();
         const embedding = await aiService.generateEmbedding(policy.content);
         await PolicyModel.updateEmbedding(policy.id, embedding);
       } catch (embeddingError) {

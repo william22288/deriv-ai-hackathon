@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 import { NotFoundError } from '../middleware/errorHandler.js';
 import { db } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
-import { OpenAIService } from '../services/ai/OpenAIService.js';
+import { GeminiService } from '../services/ai/GeminiService.js';
 import { PolicyModel } from '../database/models/Policy.js';
 import { EmployeeModel } from '../database/models/Employee.js';
 
@@ -118,7 +118,7 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response, next
     `, [userMessageId, id, content, JSON.stringify({})]);
 
     // Initialize AI service
-    const aiService = new OpenAIService();
+    const aiService = new GeminiService();
 
     // Classify intent
     const intentResult = await aiService.classifyIntent(content);

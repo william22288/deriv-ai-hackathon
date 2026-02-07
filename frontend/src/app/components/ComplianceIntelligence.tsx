@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "../api/hr-api";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ComplianceItem {
   id: string;
@@ -40,13 +41,17 @@ interface AuditArea {
 }
 
 export function ComplianceIntelligence() {
+  const { isAuthenticated } = useAuth();
   const [selectedJurisdiction, setSelectedJurisdiction] = useState<string>("all");
   const [complianceItems, setComplianceItems] = useState<ComplianceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadComplianceData();
-  }, []);
+    // Only load compliance data if user is authenticated
+    if (isAuthenticated) {
+      loadComplianceData();
+    }
+  }, [isAuthenticated]);
 
   const loadComplianceData = async () => {
     setIsLoading(true);

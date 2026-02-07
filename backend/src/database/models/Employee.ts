@@ -17,11 +17,11 @@ export class EmployeeModel {
         role, department, job_title, hire_date, location, jurisdiction,
         salary, salary_currency, manager_id
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-      ) RETURNING *
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      )
     `;
     
-    return db.one<Employee>(query, [
+    await db.none(query, [
       id,
       employeeId,
       data.email.toLowerCase(),
@@ -38,22 +38,25 @@ export class EmployeeModel {
       data.salary_currency,
       data.manager_id || null,
     ]);
+    
+    // Get the created employee
+    return this.findById(id) as Promise<Employee>;
   }
 
   static async findById(id: string): Promise<Employee | null> {
-    return db.oneOrNone<Employee>('SELECT * FROM employees WHERE id = $1', [id]);
+    return db.oneOrNone<Employee>('SELECT * FROM employees WHERE id = ?', [id]);
   }
 
   static async findByEmail(email: string): Promise<Employee | null> {
     return db.oneOrNone<Employee>(
-      'SELECT * FROM employees WHERE email = $1',
+      'SELECT * FROM employees WHERE email = ?',
       [email.toLowerCase()]
     );
   }
 
   static async findByEmployeeId(employeeId: string): Promise<Employee | null> {
     return db.oneOrNone<Employee>(
-      'SELECT * FROM employees WHERE employee_id = $1',
+      'SELECT * FROM employees WHERE employee_id = ?',
       [employeeId]
     );
   }
@@ -73,15 +76,15 @@ export class EmployeeModel {
     let paramIndex = 1;
 
     if (jurisdiction) {
-      whereClause += ` AND jurisdiction = $${paramIndex++}`;
+      whereClause += ` AND jurisdiction = ?`;
       params.push(jurisdiction);
     }
     if (department) {
-      whereClause += ` AND department = $${paramIndex++}`;
+      whereClause += ` AND department = ?`;
       params.push(department);
     }
     if (status) {
-      whereClause += ` AND employment_status = $${paramIndex++}`;
+      whereClause += ` AND employment_status = ?`;
       params.push(status);
     }
 
@@ -89,7 +92,7 @@ export class EmployeeModel {
     const dataQuery = `
       SELECT * FROM employees ${whereClause}
       ORDER BY created_at DESC
-      LIMIT $${paramIndex++} OFFSET $${paramIndex}
+      LIMIT ? OFFSET ?
     `;
 
     const [countResult, employees] = await Promise.all([
@@ -110,7 +113,7 @@ export class EmployeeModel {
 
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
-        updates.push(`${key} = $${paramIndex++}`);
+        updates.push(`${key} = ?`);
         values.push(value);
       }
     });
@@ -120,7 +123,7 @@ export class EmployeeModel {
     const query = `
       UPDATE employees 
       SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
+      WHERE id = ?
       RETURNING *
     `;
 
@@ -129,7 +132,7 @@ export class EmployeeModel {
 
   static async updateLastLogin(id: string): Promise<void> {
     await db.none(
-      'UPDATE employees SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
+      'UPDATE employees SET last_login = datetime(\'now\') WHERE id = ?',
       [id]
     );
   }
@@ -140,7 +143,7 @@ export class EmployeeModel {
 
   static async getTeam(managerId: string): Promise<Employee[]> {
     return db.manyOrNone<Employee>(
-      'SELECT * FROM employees WHERE manager_id = $1 ORDER BY first_name, last_name',
+      'SELECT * FROM employees WHERE manager_id = ? ORDER BY first_name, last_name',
       [managerId]
     );
   }

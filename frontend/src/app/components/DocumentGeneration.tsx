@@ -9,6 +9,7 @@ import { Badge } from "./ui/badge";
 import { FileText, Sparkles, Download, Eye, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "../api/hr-api";
+import { useAuth } from "../contexts/AuthContext";
 
 interface GeneratedDocument {
   id: string;
@@ -21,6 +22,7 @@ interface GeneratedDocument {
 }
 
 export function DocumentGeneration() {
+  const { isAuthenticated } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentDocument, setCurrentDocument] = useState<GeneratedDocument | null>(null);
   const [recentDocuments, setRecentDocuments] = useState<GeneratedDocument[]>([]);
@@ -56,8 +58,11 @@ export function DocumentGeneration() {
   ];
 
   useEffect(() => {
-    loadRecentDocuments();
-  }, []);
+    // Only load documents if user is authenticated
+    if (isAuthenticated) {
+      loadRecentDocuments();
+    }
+  }, [isAuthenticated]);
 
   const loadRecentDocuments = async () => {
     try {

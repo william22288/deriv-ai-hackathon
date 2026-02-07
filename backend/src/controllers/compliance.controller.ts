@@ -256,7 +256,7 @@ export async function getDashboard(req: AuthenticatedRequest, res: Response, nex
 export async function generateReport(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { jurisdiction, period_start, period_end } = req.body;
-    const { OpenAIService } = await import('../services/ai/OpenAIService.js');
+    const { GeminiService } = await import('../services/ai/GeminiService.js');
     
     // Gather compliance data
     const [statusCounts, typeCounts] = await Promise.all([
@@ -278,7 +278,7 @@ export async function generateReport(req: AuthenticatedRequest, res: Response, n
     const byType: Record<string, number> = {};
     typeCounts.forEach(t => { byType[t.item_type] = parseInt(t.count, 10); });
 
-    const aiService = new OpenAIService();
+    const aiService = new GeminiService();
     const report = await aiService.generateComplianceReport({
       totalItems: Object.values(byStatus).reduce((a, b) => a + b, 0),
       expiringSoon: byStatus['expiring_soon'] || 0,
