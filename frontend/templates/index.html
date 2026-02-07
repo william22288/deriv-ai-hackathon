@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered HR Platform</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI-Powered Self-Service HR Platform</h1>
+            <p>Intelligent Document Generation • Conversational Assistant • Proactive Compliance</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" onclick="showTab('documents')">📄 Documents</button>
+            <button class="tab" onclick="showTab('assistant')">💬 HR Assistant</button>
+            <button class="tab" onclick="showTab('compliance')">✅ Compliance</button>
+        </nav>
+
+        <!-- Phase 1: Document Generation -->
+        <div id="documents-tab" class="tab-content active">
+            <div class="section">
+                <h2>Intelligent Document Generation</h2>
+                <p class="subtitle">Auto-generate localized contracts and HR documents using GenAI</p>
+                
+                <div class="form-card">
+                    <h3>Generate New Document</h3>
+                    <form id="doc-form">
+                        <div class="form-group">
+                            <label>Document Type:</label>
+                            <select id="doc-type" required>
+                                <option value="employment_contract">Employment Contract</option>
+                                <option value="offer_letter">Offer Letter</option>
+                                <option value="nda">Non-Disclosure Agreement</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Employee ID:</label>
+                            <input type="text" id="employee-id" placeholder="e.g., EMP001" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Locale:</label>
+                            <select id="locale" required>
+                                <option value="en-US">English (US)</option>
+                                <option value="en-GB">English (UK)</option>
+                                <option value="es-ES">Spanish (Spain)</option>
+                                <option value="de-DE">German (Germany)</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Generate Document</button>
+                    </form>
+                </div>
+
+                <div id="doc-result" class="result-card" style="display: none;">
+                    <div class="alert alert-warning">
+                        ⚠️ <strong>Human Oversight Required:</strong> All AI-generated documents require human review for legal accuracy.
+                    </div>
+                    <div id="doc-content"></div>
+                    <div class="button-group">
+                        <button onclick="approveDocument()" class="btn btn-success">✓ Approve</button>
+                        <button onclick="rejectDocument()" class="btn btn-danger">✗ Reject</button>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="recent-documents">
+                    <h3>Recent Documents</h3>
+                    <div id="doc-list" class="list-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2: HR Assistant -->
+        <div id="assistant-tab" class="tab-content">
+            <div class="section">
+                <h2>Conversational HR Assistant</h2>
+                <p class="subtitle">Ask questions, update details, and get instant help</p>
+                
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="message bot-message">
+                            <strong>HR Assistant:</strong> Hello! I'm your AI-powered HR assistant. How can I help you today? 
+                            You can ask about leave policies, benefits, update your details, or request equipment.
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Type your question..." onkeypress="handleChatKeypress(event)">
+                        <button onclick="sendMessage()" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+
+                <div class="knowledge-base-card">
+                    <h3>Quick Help Topics</h3>
+                    <div class="topic-buttons">
+                        <button onclick="quickQuery('How much annual leave do I have?')" class="topic-btn">Annual Leave</button>
+                        <button onclick="quickQuery('What are my health insurance benefits?')" class="topic-btn">Health Benefits</button>
+                        <button onclick="quickQuery('How do I update my address?')" class="topic-btn">Update Details</button>
+                        <button onclick="quickQuery('What is the retirement plan?')" class="topic-btn">Retirement</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3: Compliance Intelligence -->
+        <div id="compliance-tab" class="tab-content">
+            <div class="section">
+                <h2>Proactive Compliance Intelligence</h2>
+                <p class="subtitle">Monitor permits, track training, ensure audit readiness</p>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card" id="compliance-overview">
+                        <h3>Compliance Overview</h3>
+                        <div class="loading">Loading...</div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>Active Alerts</h3>
+                        <div id="compliance-alerts" class="alerts-container"></div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3>Add Compliance Record</h3>
+                    <form id="compliance-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Employee ID:</label>
+                                <input type="text" id="comp-employee-id" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Type:</label>
+                                <select id="comp-type" required>
+                                    <option value="work_permit">Work Permit</option>
+                                    <option value="training">Training</option>
+                                    <option value="certification">Certification</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Name:</label>
+                                <input type="text" id="comp-name" placeholder="e.g., Work Permit UK" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Expiry Date:</label>
+                                <input type="date" id="comp-expiry" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Record</button>
+                    </form>
+                </div>
+
+                <div class="action-buttons">
+                    <button onclick="checkCompliance()" class="btn btn-primary">🔍 Check Compliance Status</button>
+                    <button onclick="generateReport()" class="btn btn-secondary">📊 Generate Report</button>
+                    <button onclick="predictRisks()" class="btn btn-info">🔮 Predict Risks</button>
+                </div>
+
+                <div id="compliance-result" class="result-card" style="display: none;"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>✨ Powered by GenAI • Ensuring Legal Accuracy • Human Oversight Maintained</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
