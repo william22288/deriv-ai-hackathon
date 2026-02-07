@@ -1,5 +1,5 @@
 // Backend API Configuration
-const BASE_URL = process.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const BASE_URL = "http://localhost:3000/api";
 
 // Token management
 const TOKEN_KEY = "auth_token";

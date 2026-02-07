@@ -1,14 +1,35 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
-import { FileText, Sparkles, Download, Eye, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  Sparkles,
+  Download,
+  Eye,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
-import * as api from "../api/hr-api";
+import { useGenerateContract, useContracts } from "../hooks/useHRApi";
+import { Skeleton } from "./ui/skeleton";
 
 interface GeneratedDocument {
   id: string;
@@ -21,9 +42,8 @@ interface GeneratedDocument {
 }
 
 export function DocumentGeneration() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [currentDocument, setCurrentDocument] = useState<GeneratedDocument | null>(null);
-  const [recentDocuments, setRecentDocuments] = useState<GeneratedDocument[]>([]);
+  const [currentDocument, setCurrentDocument] =
+    useState<GeneratedDocument | null>(null);
   const [formData, setFormData] = useState({
     documentType: "",
     employeeName: "",
@@ -32,15 +52,36 @@ export function DocumentGeneration() {
     startDate: "",
     salary: "",
     workLocation: "",
-    additionalClauses: ""
+    additionalClauses: "",
   });
+
+  const { mutate: generateContract, isPending: isGenerating } =
+    useGenerateContract();
+  const { data: contractsData, isLoading: contractsLoading } = useContracts();
+
+  const recentDocuments = Array.isArray(contractsData)
+    ? contractsData
+        .slice(-3)
+        .reverse()
+        .map((doc: any) => ({
+          id: doc.id,
+          type: doc.contractType || "Contract",
+          employeeName: doc.employeeName,
+          jurisdiction: doc.jurisdiction,
+          status: doc.status || "generated",
+          generatedAt: new Date(
+            doc.createdAt || doc.generatedAt,
+          ).toLocaleString(),
+          content: doc.content || "",
+        }))
+    : [];
 
   const documentTemplates = [
     { value: "employment", label: "Employment Contract", jurisdictions: 15 },
     { value: "nda", label: "Non-Disclosure Agreement", jurisdictions: 20 },
     { value: "contractor", label: "Contractor Agreement", jurisdictions: 12 },
     { value: "offer", label: "Offer Letter", jurisdictions: 18 },
-    { value: "termination", label: "Termination Letter", jurisdictions: 10 }
+    { value: "termination", label: "Termination Letter", jurisdictions: 10 },
   ];
 
   const jurisdictions = [
@@ -52,76 +93,45 @@ export function DocumentGeneration() {
     { value: "fr", label: "France" },
     { value: "ca-on", label: "Canada - Ontario" },
     { value: "au", label: "Australia" },
-    { value: "sg", label: "Singapore" }
+    { value: "sg", label: "Singapore" },
   ];
 
-  useEffect(() => {
-    loadRecentDocuments();
-  }, []);
-
-  const loadRecentDocuments = async () => {
-    try {
-      const response = await api.fetchDocuments();
-      if (response.success) {
-        // Take last 3 documents and format for display
-        const docs = response.documents.slice(-3).reverse().map((doc: any) => ({
-          ...doc,
-          generatedAt: new Date(doc.generatedAt).toLocaleString()
-        }));
-        setRecentDocuments(docs);
-      }
-    } catch (error) {
-      console.error('Error loading documents:', error);
-      // Use demo data on error
-      setRecentDocuments([
-        {
-          id: "1",
-          type: "Employment Contract",
-          employeeName: "Sarah Johnson",
-          jurisdiction: "US-CA",
-          status: "sent",
-          generatedAt: "2 hours ago",
-          content: ""
-        }
-      ]);
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!formData.documentType || !formData.employeeName || !formData.jurisdiction) {
+  const handleGenerate = () => {
+    if (
+      !formData.documentType ||
+      !formData.employeeName ||
+      !formData.jurisdiction
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    setIsGenerating(true);
-    
-    try {
-      // Call backend API to generate document
-      const response = await api.generateDocument(formData);
-      
-      if (response.success) {
-        const generatedDoc: GeneratedDocument = {
-          id: response.document.id,
-          type: response.document.type,
-          employeeName: response.document.employeeName,
-          jurisdiction: response.document.jurisdiction.toUpperCase(),
-          status: response.document.status,
-          generatedAt: "Just now",
-          content: response.document.content
-        };
-
-        setCurrentDocument(generatedDoc);
-        toast.success("Document generated and saved successfully with AI-powered localization");
-        
-        // Reload recent documents
-        loadRecentDocuments();
-      }
-    } catch (error: any) {
-      console.error('Error generating document:', error);
-      toast.error(error.message || "Failed to generate document");
-    } finally {
-      setIsGenerating(false);
-    }
+    generateContract(
+      {
+        documentType: formData.documentType,
+        employeeName: formData.employeeName,
+        position: formData.position,
+        jurisdiction: formData.jurisdiction,
+        startDate: formData.startDate,
+        salary: formData.salary,
+        workLocation: formData.workLocation,
+        additionalClauses: formData.additionalClauses,
+      },
+      {
+        onSuccess: (response: any) => {
+          const generatedDoc: GeneratedDocument = {
+            id: response.id,
+            type: response.type || "Contract",
+            employeeName: response.employeeName,
+            jurisdiction: response.jurisdiction.toUpperCase(),
+            status: response.status || "generated",
+            generatedAt: "Just now",
+            content: response.content || generateMockDocument(formData),
+          };
+          setCurrentDocument(generatedDoc);
+        },
+      },
+    );
   };
 
   const generateMockDocument = (data: typeof formData) => {
@@ -163,7 +173,7 @@ Requires human review before execution`;
     if (currentDocument) {
       setCurrentDocument({
         ...currentDocument,
-        status: "reviewed"
+        status: "reviewed",
       });
       toast.success("Document marked as reviewed - ready for human approval");
     }
@@ -189,22 +199,25 @@ Requires human review before execution`;
                 Generate New Document
               </CardTitle>
               <CardDescription>
-                Provide structured data and AI will generate a compliant, localized document
+                Provide structured data and AI will generate a compliant,
+                localized document
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="documentType">Document Type *</Label>
-                  <Select 
+                  <Select
                     value={formData.documentType}
-                    onValueChange={(value) => setFormData({...formData, documentType: value})}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, documentType: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {documentTemplates.map(template => (
+                      {documentTemplates.map((template) => (
                         <SelectItem key={template.value} value={template.value}>
                           {template.label}
                         </SelectItem>
@@ -215,15 +228,17 @@ Requires human review before execution`;
 
                 <div className="space-y-2">
                   <Label htmlFor="jurisdiction">Jurisdiction *</Label>
-                  <Select 
+                  <Select
                     value={formData.jurisdiction}
-                    onValueChange={(value) => setFormData({...formData, jurisdiction: value})}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, jurisdiction: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select jurisdiction" />
                     </SelectTrigger>
                     <SelectContent>
-                      {jurisdictions.map(j => (
+                      {jurisdictions.map((j) => (
                         <SelectItem key={j.value} value={j.value}>
                           {j.label}
                         </SelectItem>
@@ -234,67 +249,84 @@ Requires human review before execution`;
 
                 <div className="space-y-2">
                   <Label htmlFor="employeeName">Employee Name *</Label>
-                  <Input 
+                  <Input
                     id="employeeName"
                     value={formData.employeeName}
-                    onChange={(e) => setFormData({...formData, employeeName: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, employeeName: e.target.value })
+                    }
                     placeholder="John Doe"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="position">Position</Label>
-                  <Input 
+                  <Input
                     id="position"
                     value={formData.position}
-                    onChange={(e) => setFormData({...formData, position: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, position: e.target.value })
+                    }
                     placeholder="Software Engineer"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="startDate">Start Date</Label>
-                  <Input 
+                  <Input
                     id="startDate"
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="salary">Annual Salary</Label>
-                  <Input 
+                  <Input
                     id="salary"
                     value={formData.salary}
-                    onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, salary: e.target.value })
+                    }
                     placeholder="$120,000"
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="workLocation">Work Location</Label>
-                  <Input 
+                  <Input
                     id="workLocation"
                     value={formData.workLocation}
-                    onChange={(e) => setFormData({...formData, workLocation: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, workLocation: e.target.value })
+                    }
                     placeholder="San Francisco, CA"
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="additionalClauses">Additional Clauses (Optional)</Label>
-                  <Textarea 
+                  <Label htmlFor="additionalClauses">
+                    Additional Clauses (Optional)
+                  </Label>
+                  <Textarea
                     id="additionalClauses"
                     value={formData.additionalClauses}
-                    onChange={(e) => setFormData({...formData, additionalClauses: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        additionalClauses: e.target.value,
+                      })
+                    }
                     placeholder="Any specific terms or conditions to include..."
                     rows={3}
                   />
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 className="w-full"
@@ -302,7 +334,7 @@ Requires human review before execution`;
               >
                 {isGenerating ? (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Generating with AI...
                   </>
                 ) : (
@@ -324,11 +356,21 @@ Requires human review before execution`;
                     <Eye className="h-5 w-5" />
                     Document Preview
                   </span>
-                  <Badge variant={currentDocument.status === "reviewed" ? "default" : "secondary"}>
+                  <Badge
+                    variant={
+                      currentDocument.status === "reviewed"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
                     {currentDocument.status === "reviewed" ? (
-                      <><CheckCircle className="mr-1 h-3 w-3" /> Reviewed</>
+                      <>
+                        <CheckCircle className="mr-1 h-3 w-3" /> Reviewed
+                      </>
                     ) : (
-                      <><AlertCircle className="mr-1 h-3 w-3" /> Needs Review</>
+                      <>
+                        <AlertCircle className="mr-1 h-3 w-3" /> Needs Review
+                      </>
                     )}
                   </Badge>
                 </CardTitle>
@@ -343,7 +385,11 @@ Requires human review before execution`;
                   </pre>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleReview} variant="outline" className="flex-1">
+                  <Button
+                    onClick={handleReview}
+                    variant="outline"
+                    className="flex-1"
+                  >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Mark as Reviewed
                   </Button>
@@ -353,7 +399,8 @@ Requires human review before execution`;
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ⚠️ Human oversight required: Please review all AI-generated content for legal accuracy before execution
+                  ⚠️ Human oversight required: Please review all AI-generated
+                  content for legal accuracy before execution
                 </p>
               </CardContent>
             </Card>
@@ -365,21 +412,29 @@ Requires human review before execution`;
           <Card>
             <CardHeader>
               <CardTitle>Available Templates</CardTitle>
-              <CardDescription>AI-powered templates with multi-jurisdiction support</CardDescription>
+              <CardDescription>
+                AI-powered templates with multi-jurisdiction support
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {documentTemplates.map(template => (
-                  <div 
+                {documentTemplates.map((template) => (
+                  <div
                     key={template.value}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted cursor-pointer"
-                    onClick={() => setFormData({...formData, documentType: template.value})}
+                    onClick={() =>
+                      setFormData({ ...formData, documentType: template.value })
+                    }
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{template.label}</span>
+                      <span className="text-sm font-medium">
+                        {template.label}
+                      </span>
                     </div>
-                    <Badge variant="secondary">{template.jurisdictions} regions</Badge>
+                    <Badge variant="secondary">
+                      {template.jurisdictions} regions
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -392,27 +447,56 @@ Requires human review before execution`;
               <CardDescription>Recently generated contracts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentDocuments.map(doc => (
-                  <div key={doc.id} className="p-3 rounded-lg border space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{doc.employeeName}</p>
-                        <p className="text-xs text-muted-foreground">{doc.type}</p>
+              {contractsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-3 rounded-lg border space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentDocuments.length > 0 ? (
+                <div className="space-y-3">
+                  {recentDocuments.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="p-3 rounded-lg border space-y-2"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium">
+                            {doc.employeeName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.type}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            doc.status === "sent"
+                              ? "default"
+                              : doc.status === "reviewed"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {doc.status}
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={doc.status === "sent" ? "default" : doc.status === "reviewed" ? "secondary" : "outline"}
-                      >
-                        {doc.status}
-                      </Badge>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{doc.jurisdiction}</span>
+                        <span>{doc.generatedAt}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{doc.jurisdiction}</span>
-                      <span>{doc.generatedAt}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No documents yet. Create one to get started!
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
