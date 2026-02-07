@@ -3,12 +3,16 @@ Phase 3: Proactive Compliance Intelligence
 Monitors permits, training, and ensures audit readiness
 """
 import os
-from openai import OpenAI
 from datetime import datetime, timedelta
 from typing import Dict, List
 import json
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+try:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "sk-test"))
+except Exception as e:
+    # Fallback for testing without OpenAI
+    client = None
 
 class ComplianceMonitor:
     """Proactive compliance monitoring and intelligence system"""

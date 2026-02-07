@@ -3,12 +3,16 @@ Phase 1: Intelligent Document Generation Service
 Uses GenAI to auto-create localized contracts from structured data
 """
 import os
-from openai import OpenAI
 from datetime import datetime
 from typing import Dict, Optional
 import json
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+try:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "sk-test"))
+except Exception as e:
+    # Fallback for testing without OpenAI
+    client = None
 
 class DocumentGenerator:
     """Service for generating HR documents using GenAI"""

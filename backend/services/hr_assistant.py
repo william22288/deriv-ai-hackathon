@@ -3,12 +3,16 @@ Phase 2: Conversational HR Assistant
 AI-powered chatbot for answering questions, updating details, and routing requests
 """
 import os
-from openai import OpenAI
 from typing import Dict, List, Optional
 from datetime import datetime
 import json
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+try:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "sk-test"))
+except Exception as e:
+    # Fallback for testing without OpenAI
+    client = None
 
 class HRAssistant:
     """Conversational HR Assistant powered by GenAI"""
