@@ -9,8 +9,10 @@ class GenAIService:
     """Service for GenAI operations using OpenAI"""
     
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        api_key = os.getenv("OPENAI_API_KEY", "test-key-for-demo")
+        self.client = OpenAI(api_key=api_key) if api_key != "test-key-for-demo" else None
         self.model = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.mock_mode = api_key == "test-key-for-demo"
     
     async def generate_text(
         self, 
@@ -20,6 +22,10 @@ class GenAIService:
         max_tokens: int = 2000
     ) -> str:
         """Generate text using OpenAI"""
+        # Mock mode for testing/demo without API key
+        if self.mock_mode:
+            return self._generate_mock_response(prompt, system_prompt)
+        
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -44,6 +50,11 @@ class GenAIService:
         max_tokens: int = 1000
     ) -> str:
         """Multi-turn chat completion"""
+        # Mock mode for testing/demo without API key
+        if self.mock_mode:
+            last_message = messages[-1]["content"] if messages else ""
+            return self._generate_mock_response(last_message, "chat")
+        
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -55,8 +66,46 @@ class GenAIService:
         except Exception as e:
             return f"[AI Response Generated - API Error: {str(e)}]"
     
+    def _generate_mock_response(self, prompt: str, context: str = None) -> str:
+        """Generate mock response for testing/demo"""
+        prompt_lower = prompt.lower()
+        
+        # Contract section responses
+        if "employment_terms" in prompt_lower or "employment terms" in prompt_lower:
+            return """The Employee agrees to work in the capacity of the specified position, reporting to the designated manager. The employment is at-will, meaning either party may terminate the relationship at any time with appropriate notice. The Employee shall devote their full professional time and attention to the duties of their position."""
+        
+        if "compensation" in prompt_lower:
+            return """The Employee will receive an annual salary as specified, payable in accordance with the company's standard payroll schedule. Compensation is subject to applicable tax withholdings and deductions. Salary reviews will be conducted annually based on performance."""
+        
+        if "benefits" in prompt_lower:
+            return """The Employee is eligible for company benefits including health insurance, retirement plan contributions, paid time off, and other benefits as outlined in the company's benefits handbook. Benefits are subject to plan terms and conditions."""
+        
+        # HR policy responses
+        if any(word in prompt_lower for word in ["leave", "vacation", "time off"]):
+            return """Based on our company policy, full-time employees receive 15 days of paid annual leave per year. Leave requests should be submitted at least 2 weeks in advance through your manager. You can check your leave balance in the HR portal or contact the HR team for assistance."""
+        
+        if "sick" in prompt_lower:
+            return """Our sick leave policy provides 10 days of paid sick leave per year. If you're unable to work due to illness, please notify your manager as soon as possible. Medical certificates are required for absences exceeding 3 consecutive days."""
+        
+        if any(word in prompt_lower for word in ["benefit", "insurance", "health"]):
+            return """We offer comprehensive benefits including health insurance for you and your dependents, dental and vision coverage, 401(k) with employer match, life insurance, and professional development allowances. For specific details about your benefits, you can access the benefits portal or contact our benefits team."""
+        
+        if any(word in prompt_lower for word in ["remote", "work from home", "wfh"]):
+            return """Our remote work policy allows eligible employees to work remotely up to 3 days per week. You'll need prior approval from your manager and must maintain core hours (10am-3pm in your local timezone). The company provides necessary equipment for remote work."""
+        
+        # Sensitive content
+        if any(word in prompt_lower for word in ["harassment", "discrimination", "complaint"]):
+            return """I understand this is a serious matter that requires immediate attention. I'm flagging this for urgent human review by our HR team. In the meantime, please know that we take all such concerns very seriously. If you need immediate assistance, you can also contact our Employee Relations team directly at hr-urgent@company.com or call the HR hotline."""
+        
+        # Default response
+        return """Thank you for your question. I'm here to help with HR-related inquiries including policies, benefits, leave requests, and general information. For specific personal matters or complex situations, I'll connect you with an HR representative who can provide personalized assistance."""
+    
     async def analyze_intent(self, user_message: str) -> Dict[str, Any]:
         """Analyze user intent from message"""
+        # Mock mode for testing/demo
+        if self.mock_mode:
+            return self._analyze_intent_mock(user_message)
+        
         system_prompt = """You are an HR assistant intent classifier. 
         Analyze the user message and return the intent and key entities.
         Possible intents: policy_question, leave_request, update_details, 
@@ -74,6 +123,23 @@ class GenAIService:
             return {"intent": "general_inquiry", "entities": {}, "raw": response}
         except Exception:
             return {"intent": "general_inquiry", "entities": {}}
+    
+    def _analyze_intent_mock(self, message: str) -> Dict[str, Any]:
+        """Mock intent analysis for testing"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["harassment", "discrimination", "complaint"]):
+            return {"intent": "complaint", "entities": {}}
+        if any(word in message_lower for word in ["leave", "vacation", "time off"]):
+            return {"intent": "leave_request", "entities": {}}
+        if any(word in message_lower for word in ["benefit", "insurance", "health"]):
+            return {"intent": "benefits_inquiry", "entities": {}}
+        if any(word in message_lower for word in ["policy", "rule", "procedure"]):
+            return {"intent": "policy_question", "entities": {}}
+        if any(word in message_lower for word in ["update", "change", "modify"]):
+            return {"intent": "update_details", "entities": {}}
+        
+        return {"intent": "general_inquiry", "entities": {}}
     
     async def generate_contract_section(
         self,
