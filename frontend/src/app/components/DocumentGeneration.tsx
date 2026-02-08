@@ -10,6 +10,7 @@ import { FileText, Sparkles, Download, Eye, CheckCircle, AlertCircle } from "luc
 import { toast } from "sonner";
 import * as api from "../api/hr-api";
 import { useAuth } from "../contexts/AuthContext";
+import { jsPDF } from "jspdf";
 
 interface GeneratedDocument {
   id: string;
@@ -161,6 +162,46 @@ Requires human review before execution`;
   };
 
   const handleDownload = () => {
+    if (!currentDocument) {
+      toast.error("No document available to download");
+      return;
+    }
+
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+
+    const title = `${currentDocument.type} - ${currentDocument.employeeName}`;
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text(title, margin, 56);
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+
+    const meta = `Jurisdiction: ${currentDocument.jurisdiction}\nStatus: ${currentDocument.status}\nGenerated: ${currentDocument.generatedAt}`;
+    const metaLines = pdf.splitTextToSize(meta, contentWidth);
+    pdf.text(metaLines, margin, 80);
+
+    const bodyStartY = 80 + metaLines.length * 14 + 12;
+    const bodyLines = pdf.splitTextToSize(currentDocument.content || "", contentWidth);
+
+    let cursorY = bodyStartY;
+    const lineHeight = 14;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    bodyLines.forEach((line: string) => {
+      if (cursorY + lineHeight > pageHeight - margin) {
+        pdf.addPage();
+        cursorY = margin;
+      }
+      pdf.text(line, margin, cursorY);
+      cursorY += lineHeight;
+    });
+
+    const safeFileName = title.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase();
+    pdf.save(`${safeFileName || "document"}.pdf`);
     toast.success("Document downloaded as PDF");
   };
 

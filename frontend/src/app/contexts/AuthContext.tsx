@@ -22,6 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
+  const clearSession = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     const storedToken = localStorage.getItem('accessToken');
@@ -31,6 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
+  }, []);
+
+  useEffect(() => {
+    const handleForceLogout = () => {
+      clearSession();
+    };
+
+    window.addEventListener('auth:logout', handleForceLogout);
+    return () => window.removeEventListener('auth:logout', handleForceLogout);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -52,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Store token and user data
       localStorage.setItem('accessToken', data.data.access_token);
+      localStorage.setItem('refreshToken', data.data.refresh_token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
       
       setToken(data.data.access_token);
@@ -63,10 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
+    clearSession();
   };
 
   const value = {
